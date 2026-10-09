@@ -91,6 +91,7 @@ export default function SideMenu({ open, onClose, onNavigate }: Props) {
       <Animated.View
         style={[
           styles.panel,
+          
           { width: menuWidth, paddingTop: insets.top + 16, transform: [{ translateX }] },
         ]}
       >

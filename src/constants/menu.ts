@@ -7,17 +7,16 @@ export type MenuItem = {
 };
 
 export const MENU_GROUP_1: MenuItem[] = [
-  { key: 'notices', label: 'Notices', icon: 'notifications-outline' },
-  { key: 'alarms', label: 'Alarms', icon: 'alarm-outline' },
-  { key: 'settings', label: 'Settings', icon: 'options-outline' },
+  { key: 'alarms', label: 'Alarmes', icon: 'alarm-outline' },
+  { key: 'settings', label: 'Paramètres', icon: 'options-outline' },
 ];
 
 export const MENU_GROUP_2: MenuItem[] = [
-  { key: 'rates', label: 'Rates', icon: 'cash-outline' },
-  { key: 'pos', label: 'Points of sale', icon: 'location-sharp' },
-  { key: 'news', label: 'News', icon: 'newspaper-outline' },
-  { key: 'contact', label: 'Contact us', icon: 'call' },
-  { key: 'help', label: 'Help', icon: 'help-circle-outline' },
+  { key: 'rates', label: 'Tarifs', icon: 'cash-outline' },
+  { key: 'pos', label: 'Points de vente', icon: 'location-sharp' },
+  { key: 'news', label: 'Actualités', icon: 'newspaper-outline' },
+  { key: 'contact', label: 'Nous contacter', icon: 'call' },
+  { key: 'help', label: 'Aide', icon: 'help-circle-outline' },
 ];
 
 export const MENU_COLORS = {
