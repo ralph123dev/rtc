@@ -30,16 +30,31 @@
       "output": "static",
       "favicon": "./assets/images/img/logo.png"
     },
+    "splash": {
+      "image": "./assets/images/img/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/img/logo.png",
+          "imageWidth": 140,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#FFFFFF",
+            "image": "./assets/images/img/logo.png",
+            "resizeMode": "contain"
+          }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
