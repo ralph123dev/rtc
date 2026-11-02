@@ -3,8 +3,10 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,30 +17,71 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/auth-context';
+
+type Mode = 'login' | 'signup';
 
 export default function ConnexionScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [mode, setMode] = useState<Mode>('login');
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
 
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
-    } else {
-      router.replace('/(app)');
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Connexion', 'Veuillez saisir votre email et votre mot de passe.');
       return;
     }
-    Alert.alert('Connexion', `Connexion réussie pour ${email}`);
+    setLoading(true);
+    const { error } = await signIn(email.trim(), password);
+    setLoading(false);
+    if (error) {
+      Alert.alert('Erreur de connexion', error.message);
+    } else {
+      const cleanEmail = email.trim().toLowerCase();
+      if (cleanEmail === 'rtcmailpro@gmail.com') {
+        router.replace('/admin');
+      } else {
+        router.replace('/access-code');
+      }
+    }
   };
 
-  const handleCreateAccount = () => {
-    Alert.alert('Créer un compte', 'Redirection vers la création de compte.');
+  const handleCreateAccount = async () => {
+    if (mode !== 'signup') {
+      setMode('signup');
+      return;
+    }
+    if (!email || !password) {
+      Alert.alert('Inscription', 'Veuillez saisir votre email et votre mot de passe.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Inscription', 'Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+    setLoading(true);
+    const { error, data } = await signUp(email.trim(), password);
+    setLoading(false);
+    if (error) {
+      Alert.alert("Erreur d'inscription", error.message);
+    } else if (data?.session) {
+      router.replace('/access-code');
+    } else {
+      Alert.alert(
+        'Compte créé',
+        'Votre compte a été créé avec succès. Connectez-vous maintenant pour saisir votre code d’accès fourni par l’administrateur.',
+        [{ text: 'Se connecter', onPress: () => setMode('login') }],
+      );
+    }
   };
 
   const handleForgotPassword = () => {
@@ -46,7 +89,7 @@ export default function ConnexionScreen() {
   };
 
   const handleFacebookLogin = () => {
-    Alert.alert('Facebook', 'Connexion via Facebook en cours...');
+    void Linking.openURL('https://facebook.com');
   };
 
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
@@ -83,11 +126,15 @@ export default function ConnexionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.pageTitle}>Connexion</Text>
+          <Text style={styles.pageTitle}>
+            {mode === 'login' ? 'Connexion' : 'Créer un compte'}
+          </Text>
 
           {/* White Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Connectez-vous</Text>
+            <Text style={styles.cardTitle}>
+              {mode === 'login' ? 'Connectez-vous' : 'Inscrivez-vous'}
+            </Text>
 
             {/* Email field */}
             <TextInput
@@ -127,31 +174,57 @@ export default function ConnexionScreen() {
             </View>
 
             {/* Forgot password link */}
-            <TouchableOpacity
-              onPress={handleForgotPassword}
-              style={styles.forgotPasswordContainer}
-            >
-              <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
-            </TouchableOpacity>
+            {mode === 'login' && (
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                style={styles.forgotPasswordContainer}
+              >
+                <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Action buttons row */}
             <View style={styles.actionButtonsRow}>
               <TouchableOpacity
                 style={styles.createAccountButton}
-                onPress={handleCreateAccount}
+                onPress={() => {
+                  if (mode === 'login') {
+                    setMode('signup');
+                  } else {
+                    handleCreateAccount();
+                  }
+                }}
                 activeOpacity={0.8}
+                disabled={loading}
               >
-                <Text style={styles.createAccountText}>Créer un compte</Text>
+                {loading && mode === 'signup' ? (
+                  <ActivityIndicator color="#0F3D87" />
+                ) : (
+                  <Text style={styles.createAccountText}>
+                    {mode === 'signup' ? "S'inscrire" : 'Créer un compte'}
+                  </Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.loginButton, isFormValid && styles.loginButtonActive]}
-                onPress={handleLogin}
+                onPress={() => {
+                  if (mode === 'signup') {
+                    setMode('login');
+                  } else {
+                    handleLogin();
+                  }
+                }}
                 activeOpacity={0.8}
+                disabled={loading}
               >
-                <Text style={[styles.loginButtonText, isFormValid && styles.loginButtonTextActive]}>
-                  Se connecter
-                </Text>
+                {loading && mode === 'login' ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.loginButtonText, isFormValid && styles.loginButtonTextActive]}>
+                    {mode === 'login' ? 'Se connecter' : 'Retour connexion'}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
 

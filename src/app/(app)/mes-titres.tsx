@@ -1,176 +1,427 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { AppPage } from '@/components/shop/AppPage';
+import { BuyTicketsButton } from '@/components/shop/BuyTicketsButton';
+import { ShopTheme } from '@/constants/shop-theme';
+import { useActiveTicket } from '@/contexts/active-ticket-context';
 
-export default function MesTitres() {
-  const [selectedTab, setSelectedTab] = useState<'current' | 'remaining'>('remaining');
-  const isCurrentTab = selectedTab === 'current';
+type TitlesTab = 'current' | 'remaining';
+const QR_SIZE = 21;
+
+function formatExpiryDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} à ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function buildTicketCodeMatrix(code: string): boolean[][] {
+  const matrix = Array.from({ length: QR_SIZE }, () => Array(QR_SIZE).fill(false));
+  let seed = Array.from(code).reduce(
+    (value, character) => (value * 31 + character.charCodeAt(0)) >>> 0,
+    0,
+  );
+
+  const finderOrigins = [
+    [0, 0],
+    [QR_SIZE - 7, 0],
+    [0, QR_SIZE - 7],
+  ];
+
+  const inFinderArea = (x: number, y: number) =>
+    finderOrigins.some(([originX, originY]) =>
+      x >= originX - 1 &&
+      x <= originX + 7 &&
+      y >= originY - 1 &&
+      y <= originY + 7,
+    );
+
+  for (const [originX, originY] of finderOrigins) {
+    for (let y = 0; y < 7; y++) {
+      for (let x = 0; x < 7; x++) {
+        const isBorder = x === 0 || x === 6 || y === 0 || y === 6;
+        const isCenter = x >= 2 && x <= 4 && y >= 2 && y <= 4;
+        matrix[originY + y][originX + x] = isBorder || isCenter;
+      }
+    }
+  }
+
+  for (let y = 0; y < QR_SIZE; y++) {
+    for (let x = 0; x < QR_SIZE; x++) {
+      if (inFinderArea(x, y)) continue;
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      matrix[y][x] = (seed & 0x80000000) !== 0;
+    }
+  }
+
+  return matrix;
+}
+
+function TicketCodeGraphic({ code }: { code: string }) {
+  const modules = useMemo(() => buildTicketCodeMatrix(code), [code]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.logoBar}>
-        <Image
-          source={require('../../../assets/images/img/rtc.png')}
-          contentFit="contain"
-          accessibilityLabel="RTC logo"
-          style={styles.logo}
+    <View style={styles.codeFrame} accessibilityLabel="Code graphique du titre">
+      <Svg width="100%" height="100%" viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`} accessibilityLabel="Code du titre">
+        {modules.flatMap((row, y) =>
+          row.map((isFilled, x) =>
+            isFilled ? <Rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#000000" /> : null,
+          ),
+        )}
+      </Svg>
+    </View>
+  );
+}
+
+function PassengerBadge({ quantity }: { quantity: number }) {
+  return (
+    <View style={styles.passengerBadge}>
+      <Svg width={21} height={21} viewBox="0 0 24 24" accessibilityLabel="Nombre de titres">
+        <Circle cx={9} cy={7} r={4} fill={ShopTheme.colors.ticketBlue} />
+        <Path
+          d="M1.5 20c0-4 3-6.5 7.5-6.5 1.6 0 3 .3 4.1.9L11 19.5V21H2.5c-.6 0-1-.4-1-1z"
+          fill={ShopTheme.colors.ticketBlue}
         />
-      </View>
+        <Path
+          d="m12.5 18.5 2.8 2.8 5.7-6"
+          stroke={ShopTheme.colors.ticketBlue}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+      <Text style={styles.passengerCount}>{quantity}</Text>
+    </View>
+  );
+}
 
-      <View style={styles.page}>
-        <View style={styles.hero}>
-          <Text style={styles.title}>Mes titres</Text>
-          <View style={styles.tabsContainer}>
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isCurrentTab }}
-              onPress={() => setSelectedTab('current')}
-              style={[styles.tab, isCurrentTab ? styles.tabActive : styles.tabInactive]}
-            >
-              <Text style={isCurrentTab ? styles.tabTextActive : styles.tabTextInactive}>
-                Titres en cours
-              </Text>
-            </Pressable>
+export default function MesTitres() {
+  const [selectedTab, setSelectedTab] = useState<TitlesTab>('remaining');
+  const isCurrentTab = selectedTab === 'current';
+  const { activeTicket } = useActiveTicket();
 
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: !isCurrentTab }}
-              onPress={() => setSelectedTab('remaining')}
-              style={[styles.tab, !isCurrentTab ? styles.tabActive : styles.tabInactive]}
-            >
-              <Text style={!isCurrentTab ? styles.tabTextActive : styles.tabTextInactive}>
-                Titres restants
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+  const handleOpenTicket = () => {
+    if (activeTicket) {
+      router.push({
+        pathname: '/ticket-countdown',
+        params: {
+          productId: activeTicket.productId,
+          title: activeTicket.title,
+        },
+      });
+    }
+  };
 
-        <View style={styles.emptyState}>
-          <Image
-            source={require('../../../assets/images/img/titres.png')}
-            contentFit="contain"
-            accessibilityLabel="Ticket vide"
-            style={styles.ticketImage}
-          />
-
-          <Text style={styles.emptyText}>
-            {isCurrentTab
-              ? "Vous n'avez aucun titre en cours"
-              : "Vous n'avez aucun titre restant"}
-          </Text>
-
+  return (
+    <AppPage title="Mes titres">
+      <View style={styles.content}>
+        <View style={styles.tabsContainer}>
           <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/boutique')}
-            style={({ pressed }) => [styles.button, pressed && styles.pressedButton]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isCurrentTab }}
+            onPress={() => setSelectedTab('current')}
+            style={[styles.tab, isCurrentTab && styles.tabActive]}
           >
-            <Text style={styles.buttonText}>Acheter des titres</Text>
+            <Text style={styles.tabText}>Titres en cours</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: !isCurrentTab }}
+            onPress={() => setSelectedTab('remaining')}
+            style={[styles.tab, !isCurrentTab && styles.tabActive]}
+          >
+            <Text style={styles.tabText}>Titres restants</Text>
           </Pressable>
         </View>
+
+        {isCurrentTab && activeTicket ? (
+          <View style={styles.activeTicketContainer}>
+            <View style={styles.ticketCard}>
+              <View style={styles.ticketHeader}>
+                <PassengerBadge quantity={activeTicket.quantity} />
+                <Text style={styles.ticketTitle} numberOfLines={1}>
+                  {activeTicket.title}
+                </Text>
+              </View>
+
+              <View style={styles.ticketBody}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ouvrir le titre et son compte à rebours"
+                  onPress={handleOpenTicket}
+                  style={({ pressed }) => [styles.validity, pressed && styles.cardPressed]}
+                >
+                  <Text style={styles.validityLabel}>Valide jusqu&apos;au :</Text>
+                  <View style={styles.expiryRow}>
+                    <Ionicons name="calendar-outline" size={16} color="#D6322F" />
+                    <Text style={styles.expiryDate} numberOfLines={1}>
+                      {formatExpiryDate(activeTicket.expiresAt)}
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <View style={styles.separator} />
+
+                <View style={styles.ticketAside}>
+                  <View style={styles.activePill}>
+                    <View style={styles.greenDot} />
+                    <Text style={styles.activePillText}>en cours</Text>
+                  </View>
+                  <TicketCodeGraphic code={activeTicket.controlCode} />
+                </View>
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={handleOpenTicket}
+                style={({ pressed }) => [styles.correspondenceButton, pressed && styles.buttonPressed]}
+              >
+                <Text style={styles.correspondenceButtonText}>Valider une correspondance</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.validityNotice}>
+              <Ionicons
+                name="information-circle"
+                size={26}
+                color={ShopTheme.colors.ticketBlue}
+              />
+              <Text style={styles.validityNoticeText}>
+                Billet valide {Math.round(activeTicket.durationSeconds / 60)} minutes après validation
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Image
+              source={require('../../../assets/images/img/titres.png')}
+              contentFit="contain"
+              accessibilityLabel="Illustration d’un titre de transport"
+              style={styles.ticketImage}
+            />
+            <Text style={styles.emptyText}>
+              {isCurrentTab
+                ? "Vous n'avez aucun titre en cours"
+                : "Vous n'avez aucun titre restant"}
+            </Text>
+            <BuyTicketsButton />
+          </View>
+        )}
       </View>
-    </SafeAreaView>
+    </AppPage>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  content: {
     flex: 1,
-    backgroundColor: '#15366F',
-  },
-  logoBar: {
-    height: 76,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#15366F',
-  },
-  logo: {
-    width: 116,
-    height: 58,
-  },
-  page: {
-    flex: 1,
-    backgroundColor: '#F2F2F2',
-  },
-  hero: {
-    height: 204,
-    paddingTop: 42,
-    paddingHorizontal: 28,
-    backgroundColor: '#1C4698',
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: '600',
+    paddingHorizontal: 20,
   },
   tabsContainer: {
-    position: 'absolute',
-    right: 20,
-    bottom: -22,
-    left: 20,
-    height: 48,
-    flexDirection: 'row',
+    backgroundColor: ShopTheme.colors.card,
     borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
     boxShadow: '0px 3px 5px rgba(0, 0, 0, 0.16)',
     elevation: 4,
+    flexDirection: 'row',
+    height: 48,
+    marginTop: -22,
+    overflow: 'hidden',
   },
   tab: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
   },
-  tabInactive: {
-    backgroundColor: '#FFFFFF',
-  },
   tabActive: {
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: ShopTheme.colors.blue,
     borderBottomWidth: 2,
-    borderBottomColor: '#1C4698',
   },
-  tabTextInactive: {
-    color: '#171717',
-    fontSize: 14,
-  },
-  tabTextActive: {
-    color: '#171717',
+  tabText: {
+    color: ShopTheme.colors.text,
+    fontFamily: ShopTheme.fonts.regular,
     fontSize: 14,
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
     gap: 28,
-    paddingHorizontal: 24,
-    paddingTop: 34,
+    justifyContent: 'center',
     paddingBottom: 24,
+    paddingTop: 34,
   },
   ticketImage: {
-    width: 120,
     height: 90,
+    width: 120,
   },
   emptyText: {
-    color: '#131313',
+    color: ShopTheme.colors.text,
+    fontFamily: ShopTheme.fonts.bold,
     fontSize: 16,
-    fontWeight: '600',
     textAlign: 'center',
   },
-  button: {
-    minHeight: 48,
-    borderRadius: 8,
-    backgroundColor: '#1C4698',
+  activeTicketContainer: {
     alignItems: 'center',
+    paddingTop: 24,
+  },
+  validityNotice: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 12,
+  },
+  validityNoticeText: {
+    color: '#4B5563',
+    flex: 1,
+    fontFamily: ShopTheme.fonts.regular,
+    fontSize: 13,
+    textAlign: 'left',
+  },
+  ticketCard: {
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: ShopTheme.colors.ticketBlue,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    elevation: 3,
+    maxWidth: 368,
+    overflow: 'hidden',
+    paddingBottom: 10,
+    shadowColor: '#142864',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    width: '100%',
+  },
+  ticketHeader: {
+    alignItems: 'stretch',
+    backgroundColor: '#C6D4EC',
+    flexDirection: 'row',
+    height: 35,
+  },
+  passengerBadge: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderBottomColor: ShopTheme.colors.ticketBlue,
+    borderBottomRightRadius: 12,
+    borderBottomWidth: 1.5,
+    borderRightColor: ShopTheme.colors.ticketBlue,
+    borderRightWidth: 1.5,
+    flexDirection: 'row',
+    gap: 2,
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    width: 54,
   },
-  pressedButton: {
-    opacity: 0.82,
+  passengerCount: {
+    color: '#0E1B45',
+    fontFamily: ShopTheme.fonts.bold,
+    fontSize: 17,
   },
-  buttonText: {
-    color: '#FFFFFF',
+  ticketTitle: {
+    color: '#0E1B45',
+    flex: 1,
+    fontFamily: ShopTheme.fonts.bold,
     fontSize: 14,
-    fontWeight: '500',
+    paddingHorizontal: 5,
+    textAlign: 'right',
+    textAlignVertical: 'center',
+  },
+  ticketBody: {
+    flexDirection: 'row',
+    height: 105,
+  },
+  validity: {
+    alignSelf: 'flex-end',
+    flex: 1,
+    paddingBottom: 6,
+    paddingLeft: 10,
+    paddingRight: 4,
+  },
+  validityLabel: {
+    color: '#111111',
+    fontFamily: ShopTheme.fonts.regular,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  expiryRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    marginTop: 3,
+  },
+  expiryDate: {
+    color: '#111111',
+    flexShrink: 1,
+    fontFamily: ShopTheme.fonts.bold,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  separator: {
+    backgroundColor: ShopTheme.colors.ticketBlue,
+    marginBottom: 1,
+    marginTop: 10,
+    width: 1.5,
+  },
+  ticketAside: {
+    alignItems: 'center',
+    paddingTop: 11,
+    width: 92,
+  },
+  activePill: {
+    alignItems: 'center',
+    backgroundColor: '#E0F4BD',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 5,
+    height: 24,
+    paddingLeft: 7,
+    paddingRight: 9,
+  },
+  greenDot: {
+    backgroundColor: '#2E9B43',
+    borderRadius: 5,
+    height: 10,
+    width: 10,
+  },
+  activePillText: {
+    color: '#1D2A3A',
+    fontFamily: ShopTheme.fonts.medium,
+    fontSize: 12,
+  },
+  codeFrame: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#555555',
+    borderRadius: 3,
+    borderWidth: 1,
+    height: 50,
+    marginTop: 7,
+    padding: 3,
+    width: 50,
+  },
+  correspondenceButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: ShopTheme.colors.ticketBlue,
+    borderRadius: 5,
+    height: 39,
+    justifyContent: 'center',
+    marginHorizontal: 10,
+    marginTop: 10,
+    width: '94%',
+  },
+  correspondenceButtonText: {
+    color: '#FFFFFF',
+    fontFamily: ShopTheme.fonts.medium,
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+  cardPressed: {
+    opacity: 0.8,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
 });

@@ -11,61 +11,190 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader } from '@/components/shop/AppHeader';
+import { ShopTheme } from '@/constants/shop-theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function PlusScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
+  const { user, profile, signOut } = useAuth();
 
-  const handleScrollToTop = () => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  };
-
-  const handleNavigateConnexion = () => {
-    router.push('/connexion');
-  };
+  const isConnected = !!user;
 
   const handleItemPress = (title: string) => {
     Alert.alert(title, `Navigation vers ${title}`);
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Top RTC Header */}
-      <View style={styles.header}>
-        <Image
-          source={require('../../../assets/images/img/rtc.png')}
-          contentFit="contain"
-          accessibilityLabel="RTC logo"
-          style={styles.logo}
-        />
-      </View>
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Voulez-vous vraiment vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Se déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+          },
+        },
+      ],
+    );
+  };
 
+  return (
+    <View style={styles.screen}>
+      <AppHeader />
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Blue Profile Banner */}
+        {/* ───── Profile Banner ───── */}
         <View style={styles.profileBanner}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={54} color="#000000" />
-          </View>
-          <Text style={styles.profileTitle}>Non connecté</Text>
-          <TouchableOpacity
-            style={styles.idCard}
-            activeOpacity={0.8}
-            onPress={() => Alert.alert('ID client', "Vous n'avez pas d'ID client.")}
-          >
-            <Text style={styles.idCardText}>Vous n'avez pas d'ID client</Text>
-          </TouchableOpacity>
+          {isConnected ? (
+            <>
+              <View style={styles.avatarCircle}>
+                {profile?.avatarUrl ? (
+                  <Image
+                    source={{ uri: profile.avatarUrl }}
+                    contentFit="cover"
+                    style={styles.avatarImage}
+                    accessibilityLabel="Photo de profil"
+                  />
+                ) : (
+                  <Image
+                    source={require('../../../assets/images/img/user.jpg')}
+                    contentFit="cover"
+                    style={styles.avatarImage}
+                    accessibilityLabel="Photo de profil"
+                  />
+                )}
+              </View>
+              <View style={styles.nameRow}>
+                <Text style={styles.profileTitle}>
+                  {profile?.fullName || 'Utilisateur'}
+                </Text>
+                <Ionicons name="create-outline" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
+              </View>
+
+              {/* ID Client row with logout button */}
+              <View style={styles.idRow}>
+                <View style={styles.idCard}>
+                  <Ionicons name="qr-code-outline" size={22} color="#111827" />
+                  <Text style={styles.idCardText}>
+                    ID client : {profile?.clientId || '------'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Se déconnecter"
+                  style={styles.logoutButton}
+                  activeOpacity={0.8}
+                  onPress={handleSignOut}
+                >
+                  <Ionicons name="power-outline" size={24} color={ShopTheme.colors.card} />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.avatarCircle}>
+                <Ionicons name="person" size={54} color="#000000" />
+              </View>
+              <Text style={styles.profileTitle}>Non connecté</Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.idCardFull}
+                activeOpacity={0.8}
+                onPress={() => Alert.alert('ID client', "Vous n'avez pas d'ID client.")}
+              >
+                <Text style={styles.idCardText}>Vous n'avez pas d'ID client</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
-        {/* Services Section */}
+        {/* ───── Achats Section (only if connected) ───── */}
+        {isConnected && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Achats</Text>
+            <View style={styles.servicesGrid}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.serviceCard}
+                activeOpacity={0.8}
+                onPress={() => handleItemPress('Mes factures')}
+              >
+                <Ionicons name="document-text-outline" size={32} color="#0F3D87" />
+                <Text style={styles.serviceCardText}>Mes factures</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ───── Mon compte Section (only if connected) ───── */}
+        {isConnected && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Mon compte</Text>
+            <View style={styles.infosGrid}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.infoCard}
+                activeOpacity={0.8}
+                onPress={() => handleItemPress('Mes moyens de paiement')}
+              >
+                <Ionicons name="card-outline" size={32} color="#0F3D87" />
+                <Text style={styles.infoCardText}>Mes moyens{'\n'}de paiement</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.infoCard}
+                activeOpacity={0.8}
+                onPress={() => handleItemPress('Mes documents')}
+              >
+                <Ionicons name="attach-outline" size={32} color="#0F3D87" />
+                <Text style={styles.infoCardText}>Mes documents</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.infoCard}
+                activeOpacity={0.8}
+                onPress={() => handleItemPress('Mes demandes')}
+              >
+                <Ionicons name="folder-outline" size={32} color="#0F3D87" />
+                <Text style={styles.infoCardText}>Mes demandes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ───── Ma connexion biométrique (only if connected) ───── */}
+        {isConnected && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.servicesGrid}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.serviceCard}
+                activeOpacity={0.8}
+                onPress={() => handleItemPress('Ma connexion biométrique')}
+              >
+                <Ionicons name="finger-print-outline" size={32} color="#0F3D87" />
+                <Text style={styles.serviceCardText}>Ma connexion{'\n'}biométrique</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ───── Services Section ───── */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Services</Text>
           <View style={styles.servicesGrid}>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.serviceCard}
               activeOpacity={0.8}
               onPress={() => handleItemPress('Nomade temps réel')}
@@ -78,16 +207,28 @@ export default function PlusScreen() {
                   style={styles.nomadeImage}
                 />
               </View>
-              <Text style={styles.serviceCardText}>Nomade{'\n'}temps réel</Text>
+              <Text style={styles.serviceCardText}>
+                Nomade{'\n'}temps réel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Infos Section */}
+        {/* ───── Infos Section ───── */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Infos</Text>
           <View style={styles.infosGrid}>
             <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.infoCard}
+              activeOpacity={0.8}
+              onPress={() => handleItemPress('Tutoriels')}
+            >
+              <Ionicons name="help-circle-outline" size={32} color="#0F3D87" />
+              <Text style={styles.infoCardText}>Tutoriels</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => router.push('/cgu-cgv')}
@@ -95,35 +236,37 @@ export default function PlusScreen() {
               <Ionicons name="clipboard-outline" size={32} color="#0F3D87" />
               <Text style={styles.infoCardText}>CGU / CGV</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => router.push('/politique-confidentialite')}
             >
               <Ionicons name="shield-checkmark-outline" size={32} color="#0F3D87" />
-              <Text style={styles.infoCardText}>Politique{'\n'}de confide{'\n'}ntialité</Text>
+              <Text style={styles.infoCardText}>
+                Politique de{'\n'}confidentialité
+              </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => handleItemPress('Accessibilité')}
             >
               <Ionicons name="eye-off-outline" size={32} color="#0F3D87" />
-              <Text style={styles.infoCardText}>Accessibilit{'\n'}é</Text>
+              <Text style={styles.infoCardText}>Accessibilité</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => handleItemPress('Notez-nous !')}
             >
               <Ionicons name="thumbs-up-outline" size={32} color="#0F3D87" />
-              <Text style={styles.infoCardText}>Notez-nou{'\n'}s !</Text>
+              <Text style={styles.infoCardText}>Notez-nous !</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => handleItemPress('Carte des arrêts')}
@@ -131,8 +274,8 @@ export default function PlusScreen() {
               <Ionicons name="map-outline" size={32} color="#0F3D87" />
               <Text style={styles.infoCardText}>Carte des{'\n'}arrêts</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.infoCard}
               activeOpacity={0.8}
               onPress={() => handleItemPress('Contact')}
@@ -143,95 +286,136 @@ export default function PlusScreen() {
           </View>
         </View>
 
-        {/* Se connecter Button */}
-        <TouchableOpacity
-          style={styles.connectButton}
-          activeOpacity={0.8}
-          onPress={handleNavigateConnexion}
-        >
-          <Text style={styles.connectButtonText}>Se connecter</Text>
-        </TouchableOpacity>
+        {/* ───── Connect / Disconnect button ───── */}
+        {isConnected ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Se déconnecter"
+            style={styles.disconnectButton}
+            activeOpacity={0.8}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.disconnectButtonText}>Se déconnecter</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Se connecter"
+            style={styles.connectButton}
+            activeOpacity={0.8}
+            onPress={() => router.push('/connexion')}
+          >
+            <Text style={styles.connectButtonText}>Se connecter</Text>
+          </TouchableOpacity>
+        )}
 
-        {/* App Version */}
         <Text style={styles.versionText}>Ver. 2.0.3 (428) prod</Text>
       </ScrollView>
-
-      {/* Floating Action Button (FAB) for Scroll to Top */}
-      <Pressable
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        onPress={handleScrollToTop}
-        accessibilityRole="button"
-        accessibilityLabel="Retour en haut"
-      >
-        <Ionicons name="chevron-up" size={24} color="#0F3D87" />
-      </Pressable>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
+    backgroundColor: '#0F3D87',
     flex: 1,
-    backgroundColor: '#0F3D87',
-  },
-  header: {
-    height: 52,
-    backgroundColor: '#0F3D87',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 95,
-    height: 36,
   },
   scrollView: {
-    flex: 1,
     backgroundColor: '#F3F4F8',
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 32,
   },
   profileBanner: {
-    backgroundColor: '#0F3D87',
     alignItems: 'center',
-    paddingTop: 12,
+    backgroundColor: '#0F3D87',
     paddingBottom: 28,
     paddingHorizontal: 16,
+    paddingTop: 12,
   },
   avatarCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 43,
+    height: 86,
     justifyContent: 'center',
     marginBottom: 12,
+    overflow: 'hidden',
+    width: 86,
+  },
+  avatarImage: {
+    height: 86,
+    width: 86,
+  },
+  nameRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 16,
   },
   profileTitle: {
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 0,
   },
-  idCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+  idRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
     width: '92%',
     maxWidth: 380,
+  },
+  idCard: {
     alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.12)',
+    elevation: 3,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 5,
+  },
+  idCardFull: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.12)',
     elevation: 3,
+    maxWidth: 380,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    width: '92%',
   },
   idCardText: {
     color: '#111827',
     fontSize: 17,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  logoutButton: {
+    alignItems: 'center',
+    backgroundColor: ShopTheme.colors.blue,
+    borderRadius: 12,
+    elevation: 3,
+    height: 52,
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    width: 52,
   },
   sectionContainer: {
     paddingHorizontal: 14,
@@ -248,39 +432,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   serviceCard: {
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    width: 114,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
     height: 114,
-    alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
-    elevation: 2,
+    width: 114,
   },
   nomadeIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 6,
-    backgroundColor: '#0F3D87',
     alignItems: 'center',
+    backgroundColor: '#0F3D87',
+    borderRadius: 6,
+    height: 44,
     justifyContent: 'center',
     marginBottom: 8,
+    width: 44,
   },
   nomadeImage: {
-    width: 44,
-    height: 44,
     borderRadius: 6,
+    height: 44,
+    width: 44,
   },
   serviceCardText: {
     color: '#111827',
     fontSize: 13,
     fontWeight: '500',
-    textAlign: 'center',
     lineHeight: 16,
+    textAlign: 'center',
   },
   infosGrid: {
     flexDirection: 'row',
@@ -288,38 +473,39 @@ const styles = StyleSheet.create({
     marginHorizontal: -4,
   },
   infoCard: {
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    width: '31%',
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
     height: 118,
-    margin: '1.16%',
-    alignItems: 'center',
     justifyContent: 'center',
+    margin: '1.16%',
     padding: 8,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
-    elevation: 2,
+    width: '31%',
   },
   infoCardText: {
     color: '#111827',
     fontSize: 13,
     fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 10,
     lineHeight: 16,
+    marginTop: 10,
+    textAlign: 'center',
   },
   connectButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
     backgroundColor: '#0F3D87',
     borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 44,
-    alignSelf: 'center',
-    marginTop: 32,
     marginBottom: 12,
+    marginTop: 32,
     minWidth: 200,
-    alignItems: 'center',
+    paddingHorizontal: 44,
+    paddingVertical: 14,
   },
   connectButtonText: {
     color: '#FFFFFF',
@@ -329,27 +515,24 @@ const styles = StyleSheet.create({
   versionText: {
     color: '#6B7280',
     fontSize: 13,
-    textAlign: 'center',
-    marginTop: 4,
     marginBottom: 16,
+    marginTop: 4,
+    textAlign: 'center',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
+  disconnectButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 4,
+    alignSelf: 'center',
+    backgroundColor: '#DC2626',
+    borderRadius: 8,
+    marginBottom: 12,
+    marginTop: 32,
+    minWidth: 200,
+    paddingHorizontal: 44,
+    paddingVertical: 14,
   },
-  fabPressed: {
-    opacity: 0.8,
+  disconnectButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
   },
 });

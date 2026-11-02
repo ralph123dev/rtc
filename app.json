@@ -30,11 +30,6 @@
       "output": "static",
       "favicon": "./assets/images/img/logo.png"
     },
-    "splash": {
-      "image": "./assets/images/img/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "plugins": [
       "expo-router",
       [
