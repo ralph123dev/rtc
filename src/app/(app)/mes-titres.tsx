@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { AppPage } from '@/components/shop/AppPage';
 import { BuyTicketsButton } from '@/components/shop/BuyTicketsButton';
 import { ShopTheme } from '@/constants/shop-theme';
-import { useActiveTicket } from '@/contexts/active-ticket-context';
+import {
+  type ActiveTicket,
+  useActiveTicket,
+} from '@/contexts/active-ticket-context';
+import { useShopCart } from '@/contexts/shop-cart-context';
 
 type TitlesTab = 'current' | 'remaining';
 const QR_SIZE = 21;
@@ -99,19 +103,59 @@ function PassengerBadge({ quantity }: { quantity: number }) {
 }
 
 export default function MesTitres() {
-  const [selectedTab, setSelectedTab] = useState<TitlesTab>('remaining');
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [selectedTab, setSelectedTab] = useState<TitlesTab>('current');
   const isCurrentTab = selectedTab === 'current';
-  const { activeTicket } = useActiveTicket();
+  const { activeTickets, remainingTickets, activatePurchasedTicket } = useActiveTicket();
+  const { showToast } = useShopCart();
+  const currentTickets = [
+    ...remainingTickets.map((ticket) => ({
+      id: ticket.id,
+      productId: ticket.productId,
+      title: ticket.title,
+      activeTicket: null as ActiveTicket | null,
+    })),
+    ...activeTickets.map((ticket) => ({
+      id: ticket.id,
+      productId: ticket.productId,
+      title: ticket.title,
+      activeTicket: ticket,
+    })),
+  ];
 
-  const handleOpenTicket = () => {
-    if (activeTicket) {
-      router.push({
-        pathname: '/ticket-countdown',
-        params: {
-          productId: activeTicket.productId,
-          title: activeTicket.title,
-        },
-      });
+  useEffect(() => {
+    if (tab === 'current' || tab === 'remaining') {
+      setSelectedTab(tab);
+    }
+  }, [tab]);
+
+  const handleOpenTicket = (ticket: Pick<ActiveTicket, 'id' | 'productId' | 'title'>) => {
+    router.push({
+      pathname: '/ticket-countdown',
+      params: {
+        ticketId: ticket.id,
+        productId: ticket.productId,
+        title: ticket.title,
+      },
+    });
+  };
+
+  const handleActivateTicket = async (ticketId: string) => {
+    try {
+      const ticket = await activatePurchasedTicket(ticketId);
+      if (!ticket) {
+        const alreadyActivated = activeTickets.find((item) => item.id === ticketId);
+        if (alreadyActivated) {
+          handleOpenTicket(alreadyActivated);
+          return;
+        }
+        showToast('Ce titre n’est plus disponible.');
+        return;
+      }
+
+      handleOpenTicket(ticket);
+    } catch {
+      showToast('Impossible d’activer ce titre. Veuillez réessayer.');
     }
   };
 
@@ -137,62 +181,133 @@ export default function MesTitres() {
           </Pressable>
         </View>
 
-        {isCurrentTab && activeTicket ? (
-          <View style={styles.activeTicketContainer}>
-            <View style={styles.ticketCard}>
-              <View style={styles.ticketHeader}>
-                <PassengerBadge quantity={activeTicket.quantity} />
-                <Text style={styles.ticketTitle} numberOfLines={1}>
-                  {activeTicket.title}
-                </Text>
-              </View>
-
-              <View style={styles.ticketBody}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Ouvrir le titre et son compte à rebours"
-                  onPress={handleOpenTicket}
-                  style={({ pressed }) => [styles.validity, pressed && styles.cardPressed]}
-                >
-                  <Text style={styles.validityLabel}>Valide jusqu&apos;au :</Text>
-                  <View style={styles.expiryRow}>
-                    <Ionicons name="calendar-outline" size={16} color="#D6322F" />
-                    <Text style={styles.expiryDate} numberOfLines={1}>
-                      {formatExpiryDate(activeTicket.expiresAt)}
+        {isCurrentTab && currentTickets.length > 0 ? (
+          <View style={styles.remainingTickets}>
+            <Text style={styles.remainingCount}>
+              {currentTickets.length}{' '}
+              {currentTickets.length > 1 ? 'titres' : 'titre'}
+            </Text>
+            {currentTickets.map((ticket) => {
+              const activatedTicket = ticket.activeTicket;
+              return (
+                <View key={ticket.id} style={styles.ticketCard}>
+                  <View style={[styles.ticketHeader, styles.remainingTicketHeader]}>
+                    <PassengerBadge quantity={1} />
+                    <Text
+                      style={[styles.ticketTitle, styles.remainingTicketTitle]}
+                      numberOfLines={2}
+                    >
+                      {ticket.title}
                     </Text>
                   </View>
-                </Pressable>
 
-                <View style={styles.separator} />
+                  <View style={styles.ticketBody}>
+                    <View style={styles.validity}>
+                      {activatedTicket ? (
+                        <>
+                          <Text style={styles.validityLabel}>Valide jusqu&apos;au :</Text>
+                          <View style={styles.expiryRow}>
+                            <Ionicons name="calendar-outline" size={16} color="#D6322F" />
+                            <Text style={styles.expiryDate} numberOfLines={1}>
+                              {formatExpiryDate(activatedTicket.expiresAt)}
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <Text style={styles.validityLabel}>Titre prêt à être activé</Text>
+                      )}
+                    </View>
 
-                <View style={styles.ticketAside}>
-                  <View style={styles.activePill}>
-                    <View style={styles.greenDot} />
-                    <Text style={styles.activePillText}>en cours</Text>
+                    <View style={styles.separator} />
+
+                    <View style={styles.ticketAside}>
+                      <View style={styles.activePill}>
+                        <View
+                          style={[
+                            styles.greenDot,
+                            !activatedTicket && styles.inactiveDot,
+                          ]}
+                        />
+                        <Text style={styles.activePillText}>
+                          {activatedTicket ? 'en cours' : 'à valider'}
+                        </Text>
+                      </View>
+                      {activatedTicket && (
+                        <TicketCodeGraphic code={activatedTicket.controlCode} />
+                      )}
+                    </View>
                   </View>
-                  <TicketCodeGraphic code={activeTicket.controlCode} />
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      activatedTicket
+                        ? `Afficher le compte à rebours de ${ticket.title}`
+                        : `Valider une correspondance avec ${ticket.title}`
+                    }
+                    onPress={() =>
+                      activatedTicket
+                        ? handleOpenTicket(activatedTicket)
+                        : void handleActivateTicket(ticket.id)
+                    }
+                    style={({ pressed }) => [
+                      styles.correspondenceButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <Text style={styles.correspondenceButtonText}>
+                      {activatedTicket
+                        ? 'Afficher le compte à rebours'
+                        : 'Valider une correspondance'}
+                    </Text>
+                  </Pressable>
+                  {activatedTicket && (
+                    <View style={styles.validityNotice}>
+                      <Ionicons
+                        name="information-circle"
+                        size={26}
+                        color={ShopTheme.colors.ticketBlue}
+                      />
+                      <Text style={styles.validityNoticeText}>
+                        Billet valide{' '}
+                        {Math.round(activatedTicket.durationSeconds / 60)} minutes après validation
+                      </Text>
+                    </View>
+                  )}
                 </View>
+              );
+            })}
+          </View>
+        ) : !isCurrentTab && remainingTickets.length > 0 ? (
+          <View style={styles.remainingTickets}>
+            <Text style={styles.remainingCount}>
+              {remainingTickets.length}{' '}
+              {remainingTickets.length > 1 ? 'titres disponibles' : 'titre disponible'}
+            </Text>
+            {remainingTickets.map((ticket) => (
+              <View key={ticket.id} style={styles.remainingTicketCard}>
+                <View style={[styles.ticketHeader, styles.remainingTicketHeader]}>
+                  <PassengerBadge quantity={1} />
+                  <Text
+                    style={[styles.ticketTitle, styles.remainingTicketTitle]}
+                    numberOfLines={2}
+                  >
+                    {ticket.title}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Valider une correspondance avec ${ticket.title}`}
+                  onPress={() => void handleActivateTicket(ticket.id)}
+                  style={({ pressed }) => [
+                    styles.correspondenceButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.correspondenceButtonText}>Valider une correspondance</Text>
+                </Pressable>
               </View>
-
-              <Pressable
-                accessibilityRole="button"
-                onPress={handleOpenTicket}
-                style={({ pressed }) => [styles.correspondenceButton, pressed && styles.buttonPressed]}
-              >
-                <Text style={styles.correspondenceButtonText}>Valider une correspondance</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.validityNotice}>
-              <Ionicons
-                name="information-circle"
-                size={26}
-                color={ShopTheme.colors.ticketBlue}
-              />
-              <Text style={styles.validityNoticeText}>
-                Billet valide {Math.round(activeTicket.durationSeconds / 60)} minutes après validation
-              </Text>
-            </View>
+            ))}
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -265,6 +380,40 @@ const styles = StyleSheet.create({
   activeTicketContainer: {
     alignItems: 'center',
     paddingTop: 24,
+  },
+  remainingTickets: {
+    gap: 14,
+    paddingBottom: 24,
+    paddingTop: 24,
+  },
+  remainingCount: {
+    color: ShopTheme.colors.text,
+    fontFamily: ShopTheme.fonts.bold,
+    fontSize: 16,
+  },
+  remainingTicketCard: {
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: ShopTheme.colors.ticketBlue,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    elevation: 3,
+    maxWidth: 368,
+    overflow: 'hidden',
+    paddingBottom: 10,
+    paddingTop: 0,
+    shadowColor: '#142864',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    width: '100%',
+  },
+  remainingTicketHeader: {
+    height: 'auto',
+    minHeight: 48,
+  },
+  remainingTicketTitle: {
+    paddingVertical: 6,
   },
   validityNotice: {
     alignItems: 'center',
@@ -385,6 +534,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     height: 10,
     width: 10,
+  },
+  inactiveDot: {
+    backgroundColor: '#8A8A8A',
   },
   activePillText: {
     color: '#1D2A3A',

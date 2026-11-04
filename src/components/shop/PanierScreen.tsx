@@ -14,10 +14,10 @@ import { useActiveTicket } from '@/contexts/active-ticket-context';
 export function PanierScreen() {
   const { groupedItems, items, itemCount, totalInCents, removeProduct, clearCart, showToast } =
     useShopCart();
-  const { activateTicket } = useActiveTicket();
+  const { addPurchasedTickets } = useActiveTicket();
   const [cgvAccepted, setCgvAccepted] = useState(true);
 
-  const handleValidateCart = () => {
+  const handleValidateCart = async () => {
     if (!cgvAccepted) {
       showToast('Veuillez accepter les CGV et les CGU');
       return;
@@ -25,22 +25,17 @@ export function PanierScreen() {
 
     if (items.length === 0) return;
 
-    // Choose the first ticket in the cart
-    const primaryProduct = groupedItems[0]?.product ?? items[0].product;
+    try {
+      await addPurchasedTickets(items.map((item) => item.product));
+    } catch {
+      showToast('Impossible d’enregistrer vos titres. Veuillez réessayer.');
+      return;
+    }
 
-    // Validate and activate ticket
-    const active = activateTicket(primaryProduct);
-
-    // Empty the cart
     clearCart();
-
-    // Route to countdown screen
     router.push({
-      pathname: '/ticket-countdown',
-      params: {
-        productId: active.productId,
-        title: active.title,
-      },
+      pathname: '/(app)/mes-titres',
+      params: { tab: 'current' },
     });
   };
 

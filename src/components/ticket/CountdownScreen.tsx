@@ -1,7 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ActiveTicket,
+  parseTicketDurationSeconds,
+  useActiveTicket,
+} from '@/contexts/active-ticket-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Image, ImageBackground } from 'expo-image';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -14,13 +19,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
-import {
-  type ActiveTicket,
-  parseTicketDurationSeconds,
-  useActiveTicket,
-} from '@/contexts/active-ticket-context';
 
 type Props = {
+  initialTicketId?: string;
   initialProductId?: string;
   initialTitle?: string;
 };
@@ -30,7 +31,6 @@ const ORBIT_CYCLE_DURATION_MS = 3000;
 const TOUCH_ORBIT_CYCLE_DURATION_MS = 900;
 const BACKGROUND_IMAGE_SCALE = 1.09;
 const BACKGROUND_IMAGE_OFFSET_Y = 24;
-
 function pad(num: number): string {
   return String(num).padStart(2, '0');
 }
@@ -126,9 +126,9 @@ function CalendarIcon({
   );
 }
 
-export function CountdownScreen({ initialProductId, initialTitle }: Props) {
+export function CountdownScreen({ initialTicketId, initialProductId, initialTitle }: Props) {
   const insets = useSafeAreaInsets();
-  const { activeTicket, isLoaded, activateTicket } = useActiveTicket();
+  const { activeTicket, activeTickets, isLoaded, activateTicket } = useActiveTicket();
   const orbitRotation = useRef(new Animated.Value(0)).current;
   const orbitAnim = useRef<Animated.CompositeAnimation | null>(null);
   const savedRotation = useRef(0);
@@ -140,17 +140,32 @@ export function CountdownScreen({ initialProductId, initialTitle }: Props) {
   const screenOrigin = useRef({ x: 0, y: 0 });
   const [hasMovedOrbit, setHasMovedOrbit] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const matchingTicket = initialTicketId
+    ? activeTickets.find((ticket) => ticket.id === initialTicketId) ?? null
+    : activeTicket;
+  const [ticketSnapshot, setTicketSnapshot] = useState<ActiveTicket | null>(null);
 
-  // Si pas de titre actif après chargement, en activer un
   useEffect(() => {
-    if (isLoaded && !activeTicket) {
+    if (matchingTicket) setTicketSnapshot(matchingTicket);
+  }, [matchingTicket]);
+
+  useEffect(() => {
+    if (isLoaded && !matchingTicket && !initialTicketId && activeTickets.length === 0) {
       const title = initialTitle || 'RTC - 1 passage - Général';
       activateTicket({
         id: initialProductId || 'general-one-trip',
         title,
       });
     }
-  }, [isLoaded, activeTicket, initialProductId, initialTitle, activateTicket]);
+  }, [
+    isLoaded,
+    matchingTicket,
+    initialTicketId,
+    activeTickets.length,
+    initialProductId,
+    initialTitle,
+    activateTicket,
+  ]);
 
   const [now, setNow] = useState(() => Date.now());
 
@@ -160,7 +175,8 @@ export function CountdownScreen({ initialProductId, initialTitle }: Props) {
 
 
   const ticket: ActiveTicket = useMemo(() => {
-    if (activeTicket) return activeTicket;
+    if (matchingTicket) return matchingTicket;
+    if (ticketSnapshot) return ticketSnapshot;
     const activatedAt = Date.now();
     const duration = parseTicketDurationSeconds(initialTitle || 'RTC - 1 passage - Général');
     return {
@@ -174,7 +190,9 @@ export function CountdownScreen({ initialProductId, initialTitle }: Props) {
       controlCode: '1-6ACF49E06A8DA',
       expiredControlCode: '1-6ACA11C47B150',
     };
-  }, [activeTicket, initialProductId, initialTitle]);
+  }, [matchingTicket, ticketSnapshot, initialProductId, initialTitle]);
+
+  const isLevisTicket = ticket.productId.startsWith('stlevis-');
 
   const totalDurationMs = useMemo(() => {
     return ticket.durationSeconds * 1000;
@@ -425,7 +443,11 @@ export function CountdownScreen({ initialProductId, initialTitle }: Props) {
 
   return (
     <ImageBackground
-      source={require('../../../assets/images/img/motif_bleu.png')}
+      source={
+        isLevisTicket
+          ? require('../../../assets/images/img/deuxieme.png')
+          : require('../../../assets/images/img/motif_bleu.png')
+      }
       style={styles.backgroundImage}
       contentFit="cover"
       imageStyle={{
@@ -435,21 +457,23 @@ export function CountdownScreen({ initialProductId, initialTitle }: Props) {
         ],
       }}
     >
-      <Svg
-        pointerEvents="none"
-        style={styles.backgroundGradient}
-        viewBox="0 0 650 650"
-      >
-        <Defs>
-          <RadialGradient id="backgroundBlueGradient" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#0066FF" stopOpacity="0.65" />
-            <Stop offset="35%" stopColor="#0066FF" stopOpacity="0.25" />
-            <Stop offset="55%" stopColor="#0066FF" stopOpacity="0.08" />
-            <Stop offset="70%" stopColor="#0066FF" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="650" height="650" fill="url(#backgroundBlueGradient)" />
-      </Svg>
+      {!isLevisTicket && (
+        <Svg
+          pointerEvents="none"
+          style={styles.backgroundGradient}
+          viewBox="0 0 650 650"
+        >
+          <Defs>
+            <RadialGradient id="backgroundBlueGradient" cx="50%" cy="50%" r="50%">
+              <Stop offset="0%" stopColor="#0066FF" stopOpacity="0.65" />
+              <Stop offset="35%" stopColor="#0066FF" stopOpacity="0.25" />
+              <Stop offset="55%" stopColor="#0066FF" stopOpacity="0.08" />
+              <Stop offset="70%" stopColor="#0066FF" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="650" height="650" fill="url(#backgroundBlueGradient)" />
+        </Svg>
+      )}
       <View
         ref={screenRef}
         style={styles.screen}
@@ -794,7 +818,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     color: '#1b2b63',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 22,
   },
   headCenter: {
     flexDirection: 'row',
@@ -823,7 +847,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     paddingRight: 60,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1b2b63',
   },
