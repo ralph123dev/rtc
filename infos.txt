@@ -1,0 +1,159 @@
+BRIEF COMPLET POUR LA CREATION DU SITE WEB DE L’APPLICATION RTC
+
+OBJECTIF
+
+Créer un site web vitrine, en français, qui présente l’application mobile RTC et permet de télécharger l’application. Le site doit être une seule page (landing page) : il explique ce qu’est l’application, ses fonctionnalités et son utilisation, puis propose des boutons de téléchargement pour iOS et Android.
+
+Le site n’est pas une version web de l’application. Ne pas y reproduire la boutique interactive, le panier, la connexion, les comptes utilisateurs, les titres ou le compte à rebours. Son rôle est uniquement informatif et promotionnel, avec des liens vers les boutiques d’applications.
+
+IMPORTANT : les URL publiques de téléchargement iOS et Android ne sont pas configurées ni présentes dans le projet mobile. Ne pas inventer d’URL, d’identifiant d’application dans une boutique, de QR code de téléchargement ou de badge officiel. Prévoir deux valeurs de configuration clairement identifiées (APP_STORE_URL et GOOGLE_PLAY_URL) afin que les vrais liens puissent être fournis plus tard. Tant que les adresses ne sont pas renseignées, ne pas faire croire que les boutons mènent à un téléchargement réel : les masquer ou les afficher désactivés avec une indication discrète « Bientôt disponible ». Ne pas afficher un bouton fonctionnel avec un faux lien (#).
+
+PRESENTATION DU PRODUIT
+
+L’application mobile RTC est une application orientée vers la consultation et la gestion de titres de transport RTC et de réseaux associés. Elle propose une boutique de titres organisée par réseau et par profil, un panier, une section « Mes titres » pour consulter les titres restants ou en cours, et un écran de titre avec un compte à rebours après validation d’une correspondance.
+
+L’accès aux fonctionnalités de l’application mobile passe par la création ou la connexion à un compte, puis par un code de validation à six chiffres fourni par l’administrateur. Le site vitrine ne doit pas prétendre donner accès à l’application sans ce processus.
+
+S’adresser aux usagers de façon simple et rassurante, en français québécois naturel. Expliquer les fonctions sans faire de promesses non confirmées sur les paiements, l’achat réel, la validité officielle d’un billet ou l’affiliation officielle du site au RTC. Le catalogue et les fonctions visibles dans l’application sont ceux d’une application en cours de développement ; ne pas présenter une intégration de paiement, une synchronisation avec les systèmes officiels ou une disponibilité dans les boutiques comme acquises si elles ne sont pas confirmées.
+
+FONCTIONNALITES A DECRIRE
+
+1. Boutique de titres
+- Parcourir les offres par catégorie/réseau :
+  - RTC - Général
+  - RTC - 14 - 18 ans
+  - RTC - Étudiant +
+  - RTC - 65+
+  - STLévis
+  - RTC + Communauto
+  - RTC - ÉquiMobilité
+  - STAC - ÉquiMobilité
+- Les exemples de titres présents dans le catalogue comprennent des passages, des titres journaliers, des titres de plusieurs jours, des titres mensuels, des titres de 90 jours, des titres de fin de semaine ainsi que certains lots de billets.
+- Certains titres affichent une indication que des justificatifs sont nécessaires. Ne pas inventer la liste des documents requis.
+- Afficher les prix uniquement si une grille à jour est confirmée. Les prix intégrés au prototype peuvent être saisonniers ou temporaires; ne pas en faire des prix garantis sur le site.
+
+2. Panier
+- Les usagers peuvent ajouter des titres à leur panier, voir les quantités, retirer des titres et consulter un total.
+- La validation du panier enregistre les titres dans « Mes titres » dans le flux actuel de l’application.
+- Ne pas présenter le panier comme un paiement en ligne confirmé. Le site vitrine lui-même ne comporte aucun panier.
+
+3. Mes titres
+- « Titres en cours » montre les titres achetés qui sont prêts à être activés et ceux qui ont déjà été activés.
+- Chaque titre est indépendant : l’activation d’un titre ne doit pas annuler ni remplacer les autres titres de l’usager.
+- « Titres restants » permet de retrouver les titres qui n’ont pas encore été activés.
+- Le bouton « Valider une correspondance » active le titre choisi et ouvre son écran de compte à rebours.
+- Un titre expiré est retiré de la liste des titres en cours.
+- Les titres sont conservés localement sur l’appareil dans le comportement actuellement implémenté. Ne pas annoncer une sauvegarde dans le cloud ou entre plusieurs appareils sans confirmation.
+
+4. Ecran du titre activé
+- Présente le titre sélectionné, sa période de validité, un code graphique de contrôle, le temps écoulé depuis l’ouverture de l’écran et une barre de progression/état.
+- La durée de validité utilisée par l’application dépend du titre. Des exemples de durée actuellement calculés incluent 90 minutes pour un passage, 1 jour, 5 jours, 30 jours, 90 jours ou 48 heures pour la fin de semaine. Les durées et conditions officielles doivent être vérifiées avant d’être publiées sur le site.
+- Le fond illustré « deuxieme.png » est réservé aux titres STLévis dans l’application. Les autres titres utilisent un autre fond.
+- Ne pas affirmer que le code graphique de contrôle est un billet officiel ou un code réellement accepté par les systèmes de transport, sauf validation explicite.
+
+5. Compte et accès
+- Connexion ou création d’un compte avec courriel et mot de passe.
+- Après la connexion, l’application demande un code de validation à six chiffres fourni par l’administrateur avant d’ouvrir les écrans de la boutique.
+- Le site d’information ne doit pas demander les mots de passe, les codes d’accès ou les coordonnées bancaires des visiteurs.
+
+STRUCTURE OBLIGATOIRE : UNE SEULE PAGE
+
+Construire une page unique, responsive, rapide, accessible et mobile-first. Les éléments du menu, s’il y en a un, peuvent faire défiler vers des sections de cette même page avec des ancres. Ne pas créer de pages distinctes, de blog, de boutique web ou de portail utilisateur.
+
+Ordre de sections recommandé :
+
+1. EN-TETE
+- Logo RTC fourni dans les ressources graphiques, si son utilisation est autorisée.
+- Navigation légère avec ancres vers « Fonctionnalités », « Comment ça marche » et « Télécharger ».
+- Un bouton principal « Télécharger l’application » qui mène à la section de téléchargement.
+- Sur petit écran, navigation compacte et facile à utiliser au toucher.
+
+2. SECTION D’ACCUEIL (HERO)
+- Titre proposé : « Vos titres RTC, à portée de main »
+- Texte proposé : « Découvrez une application mobile pour parcourir les titres de transport, retrouver vos titres et suivre leur validité après activation. »
+- Bouton principal : « Télécharger l’application »
+- Ajouter deux boutons/badges distincts : « Télécharger sur l’App Store » et « Télécharger sur Google Play », seulement lorsque les vrais liens sont disponibles. Sinon, afficher leur statut « Bientôt disponible » sans lien fictif.
+- Montrer un visuel de téléphone présentant une capture d’écran réelle de l’application, ou une composition fidèle inspirée de son interface. Ne pas fabriquer de fausses captures incluant des fonctions qui n’existent pas.
+
+3. SECTION « UNE APPLICATION, DES TITRES PLUS FACILES À SUIVRE »
+- Présenter brièvement les bénéfices :
+  - retrouver les catégories de titres dans une boutique dédiée;
+  - consulter les titres sélectionnés dans le panier;
+  - retrouver les titres disponibles et activés dans « Mes titres »;
+  - activer séparément un titre au moment de valider une correspondance;
+  - visualiser la durée et la progression du titre activé.
+- Employer un langage descriptif et exact. Ne pas promettre un achat instantané, une recharge automatique ou une synchronisation bancaire.
+
+4. SECTION « COMMENT ÇA MARCHE »
+Présenter le parcours en quatre étapes visuelles :
+1) Créer un compte ou se connecter dans l’application.
+2) Saisir le code de validation à six chiffres fourni par l’administrateur.
+3) Parcourir la boutique, choisir des titres et les retrouver dans « Mes titres ».
+4) Pour un titre qui n’est pas encore activé, choisir « Valider une correspondance » afin d’ouvrir le compte à rebours correspondant.
+- Préciser que l’activation concerne le titre sélectionné et ne supprime pas les autres titres de l’usager.
+- Faire comprendre qu’il s’agit du parcours de l’application mobile, pas de fonctions offertes sur la page web.
+
+5. SECTION « DES TITRES SELON VOTRE BESOIN »
+- Présenter les catégories disponibles par réseau et profil, sans afficher de prix qui risqueraient d’être périmés.
+- Exemple de libellé : « Consultez les catégories RTC, STLévis, STAC et RTC + Communauto proposées dans l’application. La disponibilité des titres et les conditions applicables doivent être vérifiées dans l’application et auprès du réseau concerné. »
+- Les titres pour étudiants, jeunes, personnes de 65 ans et plus, ÉquiMobilité ou titres nécessitant une justification doivent être présentés sobrement, sans inventer des critères d’admissibilité.
+
+6. SECTION VISUELLE SUR « MES TITRES »
+- Montrer une capture représentative des listes « Titres en cours » et « Titres restants ».
+- Expliquer qu’on peut retrouver plusieurs titres à la fois et en activer un sans annuler les autres.
+- Montrer, si possible, une capture de l’écran de compte à rebours. Tout exemple de code doit être fictif et clairement illustratif, jamais présenté comme un code de transport utilisable.
+
+7. FAQ COURTE
+Exemples de questions :
+- « Comment accéder à l’application ? » — Créer un compte ou se connecter, puis saisir le code de validation fourni par l’administrateur.
+- « Où retrouver mes titres ? » — Dans la section « Mes titres » de l’application.
+- « Est-ce que l’activation d’un titre supprime les autres ? » — Non, chaque titre est conservé séparément dans l’application.
+- « Où trouver les conditions et la validité officielle d’un titre ? » — Vérifier les conditions du réseau concerné; ne pas donner de réponse non confirmée.
+- « Où télécharger l’application ? » — Afficher les liens App Store et Google Play uniquement quand les URL officielles ont été fournies.
+
+8. SECTION FINALE DE TELECHARGEMENT
+- Titre proposé : « Prêt à découvrir l’application ? »
+- Répéter les boutons de téléchargement iOS et Android avec les mêmes règles : liens officiels uniquement, aucun lien inventé.
+- Si les liens ne sont pas encore connus, afficher clairement « Téléchargement bientôt disponible ».
+
+9. PIED DE PAGE
+- Logo et nom de l’application.
+- Liens de contact et liens légaux uniquement si leurs URL et leur usage sur le site sont confirmés.
+- Liens vers les politiques de confidentialité et conditions applicables si celles-ci peuvent être publiées et maintenues à jour. Ne pas fabriquer de coordonnées ou de documents juridiques.
+- Mention de droits d’utilisation des logos et images à confirmer avant publication.
+
+DIRECTION ARTISTIQUE
+
+- Reprendre l’identité visuelle bleu marine, bleu et blanc de l’application, avec un fond clair et des touches de couleur limitées.
+- Palette actuelle indicative : bleu marine #0F2F6D, bleu #17409B, bleu des titres #1B3F94, fond clair #F2F2F2, blanc #FFFFFF. Ces couleurs sont des repères; garder un contraste accessible.
+- L’application utilise la police Inter. Utiliser Inter sur le site si elle est disponible/licenciée selon les conditions applicables; sinon choisir une police sans empattement proche.
+- Utiliser les ressources du dossier assets/images/img/ quand elles sont pertinentes : logo.png, rtc.png, ticket_bleu.png, rtc_autre.png, titres.png, camel_wifi.png, motif_bleu.png et deuxieme.png.
+- Le fichier deuxieme.png est le motif visuel associé à STLévis dans l’application. Le réutiliser seulement comme élément décoratif ou dans une capture contextuelle, pas comme fond générique qui laisserait croire que tous les titres sont STLévis.
+- Style moderne, clair, accueillant, sérieux et facile à lire. Illustrer les étapes avec des captures mobiles et des icônes simples plutôt qu’avec des effets décoratifs excessifs.
+- Prévoir une mise en page aérée, des boutons suffisamment grands au toucher, une hiérarchie visuelle évidente et des tailles de texte confortables.
+
+EXIGENCES TECHNIQUES ET ACCESSIBILITE
+
+- Une seule page web, entièrement responsive, optimisée d’abord pour téléphone puis adaptée aux tablettes et ordinateurs.
+- Performance : images compressées, formats modernes quand possible, chargement rapide, éviter les animations lourdes.
+- Accessibilité : HTML sémantique, titres hiérarchisés, liens et boutons nommés clairement, navigation clavier, focus visible, contrastes suffisants, textes alternatifs pertinents et respect de la préférence de réduction des animations.
+- Les boutons de téléchargement doivent ouvrir les boutiques dans un nouvel onglet lorsque cela convient et être configurables à un seul endroit.
+- Ajouter des métadonnées de base pour le référencement et l’aperçu social, avec un titre et une description honnêtes. Ne pas utiliser « site officiel du RTC » ou un domaine officiel sans autorisation.
+- Ne pas ajouter de formulaire collectant des données personnelles, de connexion, de paiement, de panier web ou de traceur non demandé.
+- Ajouter un favicon seulement à partir d’une ressource dont l’utilisation est autorisée.
+- Ne pas utiliser de badges App Store ou Google Play qui donnent une impression d’approbation si les liens et la disponibilité ne sont pas confirmés.
+
+TON ET REGLES DE REDACTION
+
+- Tout le contenu visible doit être en français.
+- Ton direct, accessible, positif et précis.
+- Préférer des formulations comme « consulter », « retrouver », « parcourir » et « suivre la validité ».
+- Ne pas inventer les coordonnées du support, les horaires, les prix actuels, les modalités de paiement, le statut officiel, les liens de téléchargement ni les conditions de transport.
+- Identifier clairement comme « à confirmer avant publication » les informations qui ne sont pas fournies.
+- Éviter les affirmations absolues sur les données personnelles ou la sécurité sans source vérifiée.
+
+LIVRABLE ATTENDU
+
+Créer une seule page d’accueil vitrine, soignée et prête à recevoir les vrais liens de téléchargement. Cette page doit présenter l’application RTC, expliquer en quelques sections ses fonctions mobiles et son parcours utilisateur, inclure des visuels cohérents avec l’application et proposer des boutons iOS/Android dont les adresses pourront être renseignées dès qu’elles seront communiquées.
+
+Ne pas transformer le site en application web. Ne pas ajouter de routes/pages supplémentaires. Si une information essentielle manque (URL App Store, URL Google Play, autorisation d’utiliser la marque, adresse de contact), utiliser un emplacement de configuration explicite et signaler qu’il doit être renseigné avant publication au lieu de deviner.

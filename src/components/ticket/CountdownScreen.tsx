@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     color: '#1b2b63',
     fontWeight: '700',
-    fontSize: 22,
+    fontSize: 16,
   },
   headCenter: {
     flexDirection: 'row',
