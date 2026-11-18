@@ -256,9 +256,7 @@ export default function MesTitres() {
                     ]}
                   >
                     <Text style={styles.correspondenceButtonText}>
-                      {activatedTicket
-                        ? 'Afficher le compte à rebours'
-                        : 'Valider une correspondance'}
+                      Afficher une correspondance
                     </Text>
                   </Pressable>
                   {activatedTicket && (

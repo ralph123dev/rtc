@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     paddingRight: 60,
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1b2b63',
   },
