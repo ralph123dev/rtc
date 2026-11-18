@@ -31,6 +31,16 @@ const ORBIT_CYCLE_DURATION_MS = 3000;
 const TOUCH_ORBIT_CYCLE_DURATION_MS = 900;
 const BACKGROUND_IMAGE_SCALE = 1.09;
 const BACKGROUND_IMAGE_OFFSET_Y = 24;
+const DOT_COLORS_BY_DAY = [
+  ['#0066FF', '#E4007C'], // dimanche : bleu, rose
+  ['#2F9A3F', '#111111'], // lundi : vert, noir
+  ['#0066FF', '#E4007C'], // mardi : bleu, rose
+  ['#808080', '#FFD700'], // mercredi : gris, jaune
+  ['#111111', '#FFD700'], // jeudi : noir, jaune
+  ['#FFD700', '#DC2626'], // vendredi : jaune, rouge
+  ['#0066FF', '#FFD700'], // samedi : bleu, jaune
+] as const;
+
 function pad(num: number): string {
   return String(num).padStart(2, '0');
 }
@@ -414,13 +424,15 @@ export function CountdownScreen({ initialTicketId, initialProductId, initialTitl
     return '1-6ACF49E06A8DA';
   }, [isExpired, ticket.controlCode, ticket.expiredControlCode]);
 
+  const [firstDotColor, secondDotColor] = DOT_COLORS_BY_DAY[new Date(now).getDay()];
+
   const renderOrbitDots = () => (
     <Animated.View
       pointerEvents={remainingSeconds > 1800 ? 'box-none' : 'none'}
       style={[
         styles.orbitingDots,
         {
-          opacity: remainingSeconds > 1800 ? 1 : 0,
+          opacity: 1,
           transform: [
             {
               rotate: orbitRotation.interpolate({
@@ -433,10 +445,10 @@ export function CountdownScreen({ initialTicketId, initialProductId, initialTitl
       ]}
     >
       <View style={[styles.dotTouchWrapper, styles.cyanDotPosition]}>
-        <View style={[styles.dotCircle, { backgroundColor: '#52C5F8' }]} />
+        <View style={[styles.dotCircle, { backgroundColor: firstDotColor }]} />
       </View>
       <View style={[styles.dotTouchWrapper, styles.pinkDotPosition]}>
-        <View style={[styles.dotCircle, { backgroundColor: '#E4007C' }]} />
+        <View style={[styles.dotCircle, { backgroundColor: secondDotColor }]} />
       </View>
     </Animated.View>
   );
