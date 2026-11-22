@@ -32,12 +32,12 @@ const TOUCH_ORBIT_CYCLE_DURATION_MS = 900;
 const BACKGROUND_IMAGE_SCALE = 1.09;
 const BACKGROUND_IMAGE_OFFSET_Y = 24;
 const DOT_COLORS_BY_DAY = [
-  ['#0066FF', '#E4007C'], // dimanche : bleu, rose
+  ['#87CEEB', '#FFFF00'], // dimanche : bleu, rose
   ['#2F9A3F', '#111111'], // lundi : vert, noir
-  ['#0066FF', '#E4007C'], // mardi : bleu, rose
-  ['#808080', '#FFD700'], // mercredi : gris, jaune
+  ['#FF0000', '#FF69B4'], // mardi : bleu, rose
+  ['#00008B', '#ADD8E6'], // mercredi : gris, jaune
   ['#111111', '#FFD700'], // jeudi : noir, jaune
-  ['#FFD700', '#DC2626'], // vendredi : jaune, rouge
+  ['#000000', '#008000'], // vendredi : jaune, rouge
   ['#0066FF', '#FFD700'], // samedi : bleu, jaune
 ] as const;
 
