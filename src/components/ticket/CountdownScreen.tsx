@@ -972,3 +972,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+//application créer par Ralph Développeur 
